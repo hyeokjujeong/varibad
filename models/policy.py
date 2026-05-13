@@ -159,6 +159,18 @@ class Policy(nn.Module):
     def forward(self, state, latent, belief, task):
 
         # handle inputs (normalise + embed)
+        # Compatibility fix for batch size 1:
+        # state can be 2-D while latent or disabled inputs are 1-D.
+        # Make latent match state's batch dimension and create empty
+        # disabled inputs with the same leading dimensions.
+        if state is not None and latent is not None and state.dim() == 2 and latent.dim() == 1:
+            latent = latent.unsqueeze(0)
+
+        ref_input = state if state is not None else latent
+        if ref_input is not None:
+            empty_input = torch.zeros((*ref_input.shape[:-1], 0), device=ref_input.device)
+        else:
+            empty_input = torch.zeros(0, device=device)
 
         if self.pass_state_to_policy:
             if self.norm_state:
@@ -166,28 +178,28 @@ class Policy(nn.Module):
             if self.use_state_encoder:
                 state = self.state_encoder(state)
         else:
-            state = torch.zeros(0, ).to(device)
+            state = empty_input
         if self.pass_latent_to_policy:
             if self.norm_latent:
                 latent = (latent - self.latent_rms.mean) / torch.sqrt(self.latent_rms.var + 1e-8)
             if self.use_latent_encoder:
                 latent = self.latent_encoder(latent)
         else:
-            latent = torch.zeros(0, ).to(device)
+            latent = empty_input
         if self.pass_belief_to_policy:
             if self.norm_belief:
                 belief = (belief - self.belief_rms.mean) / torch.sqrt(self.belief_rms.var + 1e-8)
             if self.use_belief_encoder:
                 belief = self.belief_encoder(belief.float())
         else:
-            belief = torch.zeros(0, ).to(device)
+            belief = empty_input
         if self.pass_task_to_policy:
             if self.norm_task:
                 task = (task - self.task_rms.mean) / torch.sqrt(self.task_rms.var + 1e-8)
             if self.use_task_encoder:
                 task = self.task_encoder(task.float())
         else:
-            task = torch.zeros(0, ).to(device)
+            task = empty_input
 
         # concatenate inputs
         inputs = torch.cat((state, latent, belief, task), dim=-1)
