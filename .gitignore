@@ -6,3 +6,10 @@ __pycache__
 logs/
 scripts/
 docker/
+
+# Claude Code & local scratch
+CLAUDE.md
+TMAZE_guideline_v4.md
+docs/
+.claude/
+*.swp
