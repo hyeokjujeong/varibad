@@ -13,6 +13,7 @@ from config.gridworld import \
     args_grid_belief_oracle, args_grid_rl2, args_grid_varibad
 from config.pointrobot import \
     args_pointrobot_multitask, args_pointrobot_varibad, args_pointrobot_rl2, args_pointrobot_humplik
+from config.tmaze import args_tmaze_varibad
 from config.mujoco import \
     args_cheetah_dir_multitask, args_cheetah_dir_expert, args_cheetah_dir_rl2, args_cheetah_dir_varibad, \
     args_cheetah_vel_multitask, args_cheetah_vel_expert, args_cheetah_vel_rl2, args_cheetah_vel_varibad, \
@@ -52,6 +53,22 @@ def main():
         args = args_pointrobot_rl2.get_args(rest_args)
     elif env == 'pointrobot_humplik':
         args = args_pointrobot_humplik.get_args(rest_args)
+
+    # --- T-MAZE (Ni et al. 2023) ---
+
+    elif env == 'tmaze_varibad':
+        args = args_tmaze_varibad.get_args(rest_args)
+        # Re-register the env with the config-chosen corridor_length so it
+        # propagates through gym.make() in parallel_envs.make_env. This keeps
+        # the L-ablation knob in env-side config without touching metalearner.py.
+        from gym.envs.registration import register, registry
+        if args.env_name in registry.env_specs:
+            del registry.env_specs[args.env_name]
+        register(
+            args.env_name,
+            entry_point='environments.navigation.tmaze:TMazeEnv',
+            kwargs={'corridor_length': args.corridor_length, 'mode': 'passive'},
+        )
 
     # --- MUJOCO ---
 

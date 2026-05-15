@@ -100,3 +100,12 @@ register(
     entry_point='environments.navigation.gridworld:GridNavi',
     kwargs={'num_cells': 5, 'num_steps': 15},
 )
+
+# # T-MAZE (Ni et al. 2023)
+# # ----------------------------------------
+
+register(
+    'TMaze-passive-v0',
+    entry_point='environments.navigation.tmaze:TMazeEnv',
+    kwargs={'corridor_length': 10, 'mode': 'passive'},
+)
