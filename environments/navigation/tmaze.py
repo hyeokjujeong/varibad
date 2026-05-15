@@ -6,9 +6,13 @@ Decoupling Memory from Credit Assignment". Reward formula from paper Section
 3.2; observation encoding mirrors Memory-RL's `ambiguous_position=True` scheme
 (reference: /PublicSSD/shnoh/Memory-RL/envs/tmaze.py).
 
-Sprint 1: passive mode only. Active mode raises NotImplementedError and is
-deferred to Sprint 2. External-facing args: `corridor_length`, `mode`. All
-other env details are hard-coded per TMAZE_guideline_v6.md sections 3 and 7.
+Supports both `mode='passive'` (Sprint 1) and `mode='active'` (Sprint 2).
+External-facing args: `corridor_length`, `mode`. All other env details are
+hard-coded per TMAZE_guideline_v6.md sections 3 and 7.
+
+Coordinate convention (Memory-RL): oracle at x=0, start at x=oracle_length,
+junction at x = oracle_length + corridor_length. Passive sets oracle_length=0
+(so S=O at x=0); active sets oracle_length=1 (so S=x=1, O=x=0).
 """
 
 import gym
@@ -30,17 +34,17 @@ class TMazeEnv(gym.Env):
             f"corridor_length must be >= 1, got {corridor_length}"
         assert mode in ('passive', 'active'), \
             f"mode must be 'passive' or 'active', got {mode!r}"
-        if mode == 'active':
-            # Sprint 2. Per guideline v6 §3 the active horizon is T = L+3 (Memory-RL
-            # convention; v6 §3 explicitly adopts the code over the paper's "L = T-2").
-            raise NotImplementedError(
-                "Active mode은 Sprint 2에서 구현. 현재는 passive만 지원.")
 
         self.corridor_length = corridor_length
         self.mode = mode
-        self.oracle_length = 0  # passive: start coincides with oracle (x=0)
-        # Horizon T = L + 1 (passive). Active will use Memory-RL's L + 3.
-        self._max_episode_steps = corridor_length + 1
+        if mode == 'passive':
+            self.oracle_length = 0          # S = O at x = 0
+            self._max_episode_steps = corridor_length + 1   # T = L + 1
+        else:  # active
+            self.oracle_length = 1          # S = x=1, O = x=0
+            # T = L + 3 follows Memory-RL's episode_length = L + 2*oracle_length + 1.
+            # v6 §3 explicitly adopts the code over the paper's "L = T-2".
+            self._max_episode_steps = corridor_length + 3
 
         # Action: Discrete(4). Order per guideline v6 §7-1.
         #   0: right, 1: up, 2: down, 3: left
@@ -182,10 +186,14 @@ class TMazeEnv(gym.Env):
         return obs
 
     def _reward(self, done):
-        """Paper Section 3.2.
+        """Paper Section 3.2, generalized to active via oracle_length grace.
 
-        Intermediate (t < T):  R_t = (1[x_{t+1} >= t] - 1) / (T - 1)
+        Intermediate (t < T):  R_t = (1[x_{t+1} >= t - oracle_length] - 1) / (T - 1)
         Terminal     (t = T):  R_T = 1[reached correct goal arm]
+
+        For passive (oracle_length=0) this matches v6 §3 verbatim. For active
+        (oracle_length=1) the agent has `oracle_length` step(s) of grace —
+        Memory-RL's reward_fn uses the same condition `x < t - oracle_length`.
 
         Here `self.step_count` is t (already incremented in step()), and
         `self.x` / `self.y` are the positions AFTER the action — i.e. the
@@ -197,4 +205,4 @@ class TMazeEnv(gym.Env):
             at_correct_arm = (self.x == x_max) and (self.y == self._goal_y)
             return 1.0 if at_correct_arm else 0.0
         t = self.step_count
-        return 0.0 if self.x >= t else -1.0 / (T - 1)
+        return 0.0 if self.x >= t - self.oracle_length else -1.0 / (T - 1)

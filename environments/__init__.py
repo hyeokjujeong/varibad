@@ -109,3 +109,9 @@ register(
     entry_point='environments.navigation.tmaze:TMazeEnv',
     kwargs={'corridor_length': 10, 'mode': 'passive'},
 )
+
+register(
+    'TMaze-active-v0',
+    entry_point='environments.navigation.tmaze:TMazeEnv',
+    kwargs={'corridor_length': 10, 'mode': 'active'},
+)

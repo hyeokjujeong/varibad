@@ -58,6 +58,14 @@ def main():
 
     elif env == 'tmaze_varibad':
         args = args_tmaze_varibad.get_args(rest_args)
+        # Resolve passive vs active mode from the env_name suffix (gym variant
+        # convention, mirrors how HalfCheetah-v2 / -v3 share a config).
+        if args.env_name == 'TMaze-passive-v0':
+            tmaze_mode = 'passive'
+        elif args.env_name == 'TMaze-active-v0':
+            tmaze_mode = 'active'
+        else:
+            raise ValueError(f"unsupported tmaze env_name: {args.env_name!r}")
         # Re-register the env with the config-chosen corridor_length so it
         # propagates through gym.make() in parallel_envs.make_env. This keeps
         # the L-ablation knob in env-side config without touching metalearner.py.
@@ -67,7 +75,7 @@ def main():
         register(
             args.env_name,
             entry_point='environments.navigation.tmaze:TMazeEnv',
-            kwargs={'corridor_length': args.corridor_length, 'mode': 'passive'},
+            kwargs={'corridor_length': args.corridor_length, 'mode': tmaze_mode},
         )
 
     # --- MUJOCO ---
