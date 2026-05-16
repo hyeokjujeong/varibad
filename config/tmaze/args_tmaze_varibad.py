@@ -118,12 +118,12 @@ def get_args(rest_args):
     # - decoder: rewards
     parser.add_argument('--decode_reward', type=boolean_argument, default=True, help='use reward decoder')
     parser.add_argument('--rew_loss_coeff', type=float, default=1.0, help='weight for state loss (vs reward loss)')
-    parser.add_argument('--input_prev_state', type=boolean_argument, default=False, help='use prev state for rew pred')
-    parser.add_argument('--input_action', type=boolean_argument, default=False, help='use prev action for rew pred')
+    parser.add_argument('--input_prev_state', type=boolean_argument, default=True, help='use prev state for rew pred')
+    parser.add_argument('--input_action', type=boolean_argument, default=True, help='use prev action for rew pred')
     parser.add_argument('--reward_decoder_layers', nargs='+', type=int, default=[32, 32])
-    parser.add_argument('--multihead_for_reward', type=boolean_argument, default=True,
+    parser.add_argument('--multihead_for_reward', type=boolean_argument, default=False,
                         help='one head per reward pred (i.e. per state)')
-    parser.add_argument('--rew_pred_type', type=str, default='bernoulli',
+    parser.add_argument('--rew_pred_type', type=str, default='deterministic',
                         help='choose: '
                              'bernoulli (predict p(r=1|s))'
                              'categorical (predict p(r=1|s) but use softmax instead of sigmoid)'
